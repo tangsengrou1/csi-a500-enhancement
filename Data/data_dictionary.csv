@@ -1,0 +1,33 @@
+file,column,type,unit,description,required
+prices,date,date,YYYY-MM-DD,交易日期,yes
+prices,wind_code,text,,Wind证券代码,yes
+prices,close,number,CNY,未复权收盘价,yes
+prices,adj_close,number,CNY,前复权收盘价,yes
+prices,amount,number,CNY,成交额,yes
+prices,trade_status,text,,交易或停牌,yes
+prices,limit_status,text,,正常或涨停或跌停,yes
+benchmark,date,date,YYYY-MM-DD,交易日期,yes
+benchmark,price_close,number,index point,中证A500价格指数收盘值,yes
+benchmark,total_return_close,number,index point,中证A500全收益指数收盘值,yes
+constituents,date,date,YYYY-MM-DD,成分权重生效日期,yes
+constituents,wind_code,text,,Wind证券代码,yes
+constituents,weight,number,decimal,指数权重且每日合计为1,yes
+industry,effective_date,date,YYYY-MM-DD,行业分类生效日期,yes
+industry,wind_code,text,,Wind证券代码,yes
+industry,industry,text,,申万一级行业名称,yes
+valuation,date,date,YYYY-MM-DD,指标日期,yes
+valuation,wind_code,text,,Wind证券代码,yes
+valuation,pe_ttm,number,multiple,市盈率TTM,yes
+valuation,pb_lf,number,multiple,市净率LF,yes
+valuation,ps_ttm,number,multiple,市销率TTM,yes
+valuation,dividend_yield,number,decimal,股息率,yes
+fundamentals,announce_date,date,YYYY-MM-DD,财务数据公告日期,yes
+fundamentals,report_period,date,YYYY-MM-DD,报告期,yes
+fundamentals,wind_code,text,,Wind证券代码,yes
+fundamentals,roe,number,decimal,净资产收益率,yes
+fundamentals,gross_margin,number,decimal,毛利率,yes
+fundamentals,ocf_to_profit,number,ratio,经营现金流与净利润比,yes
+fundamentals,debt_to_assets,number,decimal,资产负债率,yes
+risk_free,date,date,YYYY-MM-DD,交易日期,yes
+risk_free,annual_rate,number,decimal,年化无风险利率,yes
+

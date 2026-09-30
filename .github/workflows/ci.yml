@@ -1,0 +1,37 @@
+name: synthetic-ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            Code/requirements.txt
+            Code/requirements-dev.txt
+      - name: Install dependencies
+        run: python -m pip install -r Code/requirements-dev.txt
+      - name: Compile Python sources
+        run: python -m compileall -q Code/a500 Code/tests Code/run_pipeline.py Code/run_experiments.py
+      - name: Run unit tests
+        run: pytest Code/tests -q
+      - name: Run synthetic integration pipeline
+        run: python Code/run_pipeline.py demo --config Code/config.json
+      - name: Assert no Wind files are tracked
+        run: |
+          if git ls-files 'Data/raw/*' 'Data/processed/*' 'Data/factor_store/*' | grep -Ev '/README\.md$'; then
+            echo 'Protected data directory contains tracked files.'
+            exit 1
+          fi

@@ -1,0 +1,39 @@
+name: 因子提案
+description: 登记开源或自研因子的定义、数据和授权信息
+title: "[Factor] "
+labels: ["factor"]
+body:
+  - type: input
+    id: factor_name
+    attributes:
+      label: 因子名称
+    validations:
+      required: true
+  - type: textarea
+    id: formula
+    attributes:
+      label: 因子公式与方向
+      description: 写明数学公式、排序方向和异常值处理。
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: 来源与许可证
+      description: 提供论文、仓库链接、版本或 commit 与许可证；禁止直接复制不兼容代码。
+    validations:
+      required: true
+  - type: textarea
+    id: fields
+    attributes:
+      label: 所需字段与可用时点
+      description: 列明字段、频率、窗口、公告日/PIT 规则和最长有效期。
+    validations:
+      required: true
+  - type: textarea
+    id: validation_plan
+    attributes:
+      label: 验证方案
+      description: 覆盖率、IC/ICIR、分组收益、相关性、换手率和稳健性。
+    validations:
+      required: true

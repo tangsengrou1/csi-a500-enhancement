@@ -1,0 +1,31 @@
+{
+  "annualization_days": 252,
+  "rebalance_frequency": "W-FRI",
+  "covariance_lookback": 120,
+  "momentum_lookback": 252,
+  "momentum_skip": 21,
+  "volatility_lookback": 60,
+  "minimum_history": 120,
+  "factor_staleness_days": 400,
+  "transaction_cost_bps": 20,
+  "tracking_error_limit": 0.06,
+  "industry_active_limit": 0.02,
+  "stock_active_limit": 0.01,
+  "weekly_one_way_turnover_limit": 0.20,
+  "risk_aversion": 4.0,
+  "turnover_penalty": 0.001,
+  "bl_tau": 0.05,
+  "bl_risk_aversion": 2.5,
+  "ic_lookback_weeks": 26,
+  "min_ic_observations": 8,
+  "active_factors": ["value", "quality", "momentum", "low_vol"],
+  "use_black_litterman": true,
+  "optimizer_iterations": 300,
+  "optimizer_tolerance": 1e-8,
+  "paths": {
+    "raw": "Data/raw",
+    "processed": "Data/processed",
+    "official_result": "Result/official",
+    "demo_result": "Result/demo"
+  }
+}

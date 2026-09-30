@@ -1,0 +1,36 @@
+name: 实验登记
+description: 记录可复现的模型、因子或组合实验
+title: "[Experiment] "
+labels: ["experiment"]
+body:
+  - type: textarea
+    id: hypothesis
+    attributes:
+      label: 假设与对照组
+    validations:
+      required: true
+  - type: textarea
+    id: periods
+    attributes:
+      label: 训练期、验证期与测试期
+      description: 必须保持时间顺序，写明滚动或扩展窗口。
+    validations:
+      required: true
+  - type: textarea
+    id: params
+    attributes:
+      label: 参数与随机种子
+    validations:
+      required: true
+  - type: textarea
+    id: metrics
+    attributes:
+      label: 评价指标与验收阈值
+      description: 包括超额收益、IR、跟踪误差、回撤、换手和约束通过率。
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: 结果与结论
+      description: 不要粘贴股票级正式数据。
