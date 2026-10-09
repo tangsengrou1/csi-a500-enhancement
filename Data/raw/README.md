@@ -13,5 +13,3 @@
 未就绪:
 - `fundamentals.csv`: 尚未生成。Wind 导出中未找到"公告日期"(ann_dt)指标,仅有"报告期";转换脚本已支持用报告期按法定披露截止日近似公告日,确认后即可转换;
 - `constituents.csv`、`industry.csv`: 尚未导出,未处理。
-
-重导清单见 `Data/Wind导出操作步骤.md`。
