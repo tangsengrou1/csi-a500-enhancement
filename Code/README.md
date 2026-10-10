@@ -26,6 +26,29 @@ python Code/run_pipeline.py backtest --config Code/config.json
 python Code/run_experiments.py
 ```
 
+## 周频单因子组合评价
+
+正式评价必须传入历史成分股文件：
+
+```bash
+python Code/run_factor_evaluation.py \
+  --market Data/raw/processed_data.csv \
+  --constituents Data/raw/constituents.csv \
+  --config Code/factor_evaluation_config.json \
+  --output Result/factor_reports/basic
+```
+
+在历史成分股尚未到位时，只能用开发模式验证工程流程：
+
+```bash
+python Code/run_factor_evaluation.py \
+  --market Data/raw/processed_data.csv \
+  --development-universe \
+  --output Result/factor_reports/development
+```
+
+开发模式会把每周有行情的股票视为股票池，结果不得写入正式报告。基础版默认选取因子排名最高的20%股票等权持有，信号日在周末前最后一个交易日收盘后形成，下一交易日建仓，并持有至下一次调仓执行日。
+
 无正式数据时可运行：
 
 ```bash
