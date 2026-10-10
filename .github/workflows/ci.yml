@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: python -m pip install -r Code/requirements-dev.txt
       - name: Compile Python sources
-        run: python -m compileall -q Code/a500 Code/tests Code/run_pipeline.py Code/run_experiments.py
+        run: python -m compileall -q Code/a500 Code/tests Code/run_pipeline.py Code/run_experiments.py Code/run_factor_evaluation.py
       - name: Run unit tests
         run: pytest Code/tests -q
       - name: Run synthetic integration pipeline
