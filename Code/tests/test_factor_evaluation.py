@@ -75,6 +75,70 @@ def test_position_mapping_and_turnover():
     assert one_way_turnover(weights, weights) == 0.0
 
 
+def test_all_position_mapping_options():
+    scores = pd.Series(np.linspace(-2, 2, 20), index=[f"S{i}" for i in range(20)])
+    modes = [
+        "top_quantile_equal_weight",
+        "top_quantile_rank_weighted",
+        "rank_weighted_long_only",
+        "score_proportional_long_only",
+        "softmax_long_only",
+        "linear_rank_tilt",
+    ]
+    for mode in modes:
+        config = base_config()
+        config["position_mapping"] = mode
+        weights = scores_to_weights(scores, config)
+        assert not weights.empty
+        assert abs(weights.sum() - 1) < 1e-12
+        assert (weights >= 0).all()
+        assert weights.loc["S19"] >= weights.iloc[0]
+
+    top_config = base_config()
+    top_config["position_mapping"] = "top_quantile_rank_weighted"
+    assert len(scores_to_weights(scores, top_config)) == 4
+
+
+def test_position_mapping_parameter_validation():
+    scores = pd.Series(range(20), index=[f"S{i}" for i in range(20)])
+    invalid_cases = [
+        ("top_quantile_equal_weight", "top_fraction", 0),
+        ("rank_weighted_long_only", "rank_exponent", 0),
+        ("score_proportional_long_only", "score_floor", 0),
+        ("softmax_long_only", "softmax_temperature", 0),
+        ("linear_rank_tilt", "rank_tilt_strength", -1),
+    ]
+    for mode, parameter, value in invalid_cases:
+        config = base_config()
+        config["position_mapping"] = mode
+        config[parameter] = value
+        try:
+            scores_to_weights(scores, config)
+            raise AssertionError(f"{parameter} 非法时应触发异常")
+        except ValueError:
+            pass
+
+
+def test_all_position_mappings_run_end_to_end():
+    market, constituents = make_market(n_assets=25, n_days=80)
+    for mode in [
+        "top_quantile_equal_weight",
+        "top_quantile_rank_weighted",
+        "rank_weighted_long_only",
+        "score_proportional_long_only",
+        "softmax_long_only",
+        "linear_rank_tilt",
+    ]:
+        config = base_config()
+        config["position_mapping"] = mode
+        result = evaluate_factors(
+            market, constituents, make_basic_registry(), ["momentum_20"], config,
+        )
+        assert result.summary.iloc[0]["periods"] > 0
+        assert (result.weights["weight"] >= 0).all()
+        assert (result.weights.groupby("execution_date")["weight"].sum() - 1).abs().max() < 1e-10
+
+
 def test_weekly_factor_evaluation_outputs_and_timing():
     market, constituents = make_market()
     result = evaluate_factors(

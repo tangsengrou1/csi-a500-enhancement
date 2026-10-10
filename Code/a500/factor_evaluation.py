@@ -104,16 +104,53 @@ def scores_to_weights(scores: pd.Series, config: dict) -> pd.Series:
     if len(scores) < minimum or scores.nunique() < 2:
         return pd.Series(dtype=float)
     ranks = scores.rank(method="average", pct=True)
+
+    def normalize(raw: pd.Series) -> pd.Series:
+        raw = pd.to_numeric(raw, errors="coerce").replace([np.inf, -np.inf], np.nan).fillna(0.0)
+        if (raw < 0).any():
+            raise ValueError(f"{mode} 产生了负权重")
+        total = float(raw.sum())
+        if not np.isfinite(total) or total <= 0:
+            return pd.Series(dtype=float)
+        return raw / total
+
+    top_fraction = float(config.get("top_fraction", 0.20))
+    if not 0 < top_fraction <= 1:
+        raise ValueError("top_fraction 必须在 (0, 1] 内")
+    rank_exponent = float(config.get("rank_exponent", 1.0))
+    if rank_exponent <= 0:
+        raise ValueError("rank_exponent 必须大于 0")
+
     if mode == "top_quantile_equal_weight":
-        top_fraction = float(config.get("top_fraction", 0.20))
         selected = ranks[ranks > 1 - top_fraction].index
         if len(selected) < 1:
             return pd.Series(dtype=float)
         return pd.Series(1.0 / len(selected), index=selected)
+    if mode == "top_quantile_rank_weighted":
+        selected = ranks[ranks > 1 - top_fraction]
+        return normalize(selected.pow(rank_exponent))
     if mode == "rank_weighted_long_only":
-        exponent = float(config.get("rank_exponent", 1.0))
-        raw = ranks.pow(exponent)
-        return raw / raw.sum()
+        return normalize(ranks.pow(rank_exponent))
+    if mode == "score_proportional_long_only":
+        score_floor = float(config.get("score_floor", 1e-12))
+        if score_floor <= 0:
+            raise ValueError("score_floor 必须大于 0")
+        shifted = scores - scores.min() + score_floor
+        return normalize(shifted)
+    if mode == "softmax_long_only":
+        temperature = float(config.get("softmax_temperature", 1.0))
+        if temperature <= 0:
+            raise ValueError("softmax_temperature 必须大于 0")
+        std = float(scores.std(ddof=0))
+        standardized = (scores - scores.mean()) / std if std > 0 else scores * 0
+        logits = standardized / temperature
+        return normalize(np.exp(logits - logits.max()))
+    if mode == "linear_rank_tilt":
+        tilt_strength = float(config.get("rank_tilt_strength", 1.0))
+        if tilt_strength < 0:
+            raise ValueError("rank_tilt_strength 必须大于等于 0")
+        raw = (1.0 + tilt_strength * (2.0 * ranks - 1.0)).clip(lower=0.0)
+        return normalize(raw)
     raise ValueError(f"不支持的仓位映射: {mode}")
 
 
@@ -166,6 +203,7 @@ def evaluate_factors(
     config: dict,
 ) -> FactorEvaluationResult:
     market = standardize_market_data(market)
+    position_mapping = config.get("position_mapping", "top_quantile_equal_weight")
     if config.get("drop_weekends", True):
         market = market[market["date"].dt.dayofweek < 5].copy()
     panel = build_market_panel(market, config.get("price_field", "close"))
@@ -229,7 +267,8 @@ def evaluate_factors(
             weights = scores_to_weights(scores, config)
             if weights.empty:
                 diagnostic_rows.append({
-                    "factor_id": factor_id, "signal_date": signal_date,
+                    "factor_id": factor_id, "position_mapping": position_mapping,
+                    "signal_date": signal_date,
                     "status": "SKIP_INSUFFICIENT_SCORES", "universe_size": len(universe),
                     "valid_scores": len(scores), "coverage": coverage,
                     "universe_type": universe_label,
@@ -245,13 +284,15 @@ def evaluate_factors(
             factor_turnover[execution_date] = turnover
             for code, weight in weights.items():
                 weight_rows.append({
-                    "factor_id": factor_id, "signal_date": signal_date,
+                    "factor_id": factor_id, "position_mapping": position_mapping,
+                    "signal_date": signal_date,
                     "execution_date": execution_date, "exit_date": exit_date,
                     "wind_code": code, "factor_value": float(raw_scores.get(code, np.nan)),
                     "processed_score": float(scores[code]), "weight": float(weight),
                 })
             diagnostic_rows.append({
-                "factor_id": factor_id, "signal_date": signal_date,
+                "factor_id": factor_id, "position_mapping": position_mapping,
+                "signal_date": signal_date,
                 "execution_date": execution_date, "exit_date": exit_date,
                 "status": "OK", "universe_size": len(universe),
                 "valid_scores": len(scores), "selected_stocks": len(weights),
@@ -267,12 +308,22 @@ def evaluate_factors(
         summary_rows.append({
             "factor_id": factor_id, "library": definition.library,
             "category": definition.category, "direction": definition.direction,
+            "position_mapping": position_mapping,
             **metrics,
         })
         nav = (1 + returns).cumprod()
-        return_rows.extend({"date": d, "factor_id": factor_id, "weekly_return": v} for d, v in returns.items())
-        pnl_rows.extend({"date": d, "factor_id": factor_id, "pnl_curve": v} for d, v in nav.items())
-        turnover_rows.extend({"date": d, "factor_id": factor_id, "one_way_turnover": v} for d, v in turnovers.items())
+        return_rows.extend({
+            "date": d, "factor_id": factor_id, "position_mapping": position_mapping,
+            "weekly_return": v,
+        } for d, v in returns.items())
+        pnl_rows.extend({
+            "date": d, "factor_id": factor_id, "position_mapping": position_mapping,
+            "pnl_curve": v,
+        } for d, v in nav.items())
+        turnover_rows.extend({
+            "date": d, "factor_id": factor_id, "position_mapping": position_mapping,
+            "one_way_turnover": v,
+        } for d, v in turnovers.items())
 
     return FactorEvaluationResult(
         summary=pd.DataFrame(summary_rows),

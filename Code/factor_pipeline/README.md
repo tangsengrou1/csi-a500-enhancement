@@ -9,4 +9,4 @@
 - `run_factor_evaluation.py`：命令行入口；
 - `factor_evaluation_config.json`：仓位映射、费用和因子列表。
 
-基础版默认将每周因子排名最高的20%股票等权持有。正式评价必须提供历史成分股文件；`--development-universe` 只允许用于调试。
+基础版默认将每周因子排名最高的20%股票等权持有，同时支持顶部排名加权、全样本排名加权、因子值比例、Softmax和线性排名倾斜。完整公式、参数与扩展约定见 [`FACTOR_EVALUATION_SPEC.md`](FACTOR_EVALUATION_SPEC.md)。正式评价必须提供历史成分股文件；`--development-universe` 只允许用于调试。
