@@ -1,0 +1,4 @@
+﻿factor,check,status
+klen,independent_numpy_formula,PASS
+kmid,independent_numpy_formula,PASS
+kmid2,independent_numpy_formula,PASS
