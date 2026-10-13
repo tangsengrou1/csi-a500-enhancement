@@ -9,6 +9,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from a500.factor_evaluation import (
     evaluate_factors,
     one_way_turnover,
+    rank_ic_metrics,
+    spearman_correlation,
     scores_to_weights,
     standardize_market_data,
 )
@@ -45,6 +47,9 @@ def base_config():
         "position_mapping": "top_quantile_equal_weight",
         "top_fraction": 0.20,
         "minimum_stocks": 10,
+        "ic_minimum_stocks": 10,
+        "correlation_minimum_stocks": 10,
+        "periods_per_year": 52,
         "winsorize_lower": 0.01,
         "winsorize_upper": 0.99,
         "transaction_cost_bps": 20,
@@ -158,6 +163,24 @@ def test_weekly_factor_evaluation_outputs_and_timing():
     assert (pd.to_datetime(ok["execution_date"]) > pd.to_datetime(ok["signal_date"])).all()
     assert (pd.to_datetime(ok["exit_date"]) > pd.to_datetime(ok["execution_date"])).all()
     assert set(ok["universe_type"]) == {"HISTORICAL_CONSTITUENTS"}
+    assert {"rank_ic_mean", "rank_icir", "rank_icir_annualized"}.issubset(result.summary.columns)
+    assert result.rank_ic["rank_ic"].dropna().between(-1, 1).all()
+    assert set(result.factor_correlation_summary[["factor_a", "factor_b"]].stack()).issubset(
+        {"momentum_20", "reversal_5", "low_volatility_20"},
+    )
+    assert result.factor_correlation_matrix.shape == (3, 3)
+    assert np.allclose(np.diag(result.factor_correlation_matrix), 1.0)
+
+
+def test_rank_ic_detects_predictive_ordering():
+    scores = pd.Series(range(20), index=[f"S{i}" for i in range(20)])
+    forward_returns = scores * 0.01
+    assert spearman_correlation(scores, forward_returns) == 1.0
+    assert spearman_correlation(scores, -forward_returns) == -1.0
+    metrics = rank_ic_metrics(pd.Series([0.1, 0.2, 0.3]), periods_per_year=52)
+    assert np.isclose(metrics["rank_ic_mean"], 0.2)
+    assert np.isclose(metrics["rank_icir"], 2.0)
+    assert np.isclose(metrics["rank_icir_annualized"], 2.0 * np.sqrt(52))
 
 
 def test_formal_run_requires_constituents():

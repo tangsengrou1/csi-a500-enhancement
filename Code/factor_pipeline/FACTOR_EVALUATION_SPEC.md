@@ -4,7 +4,7 @@
 
 ## 1. 系统目标与边界
 
-系统每周在当时有效的指数成分股内计算一个因子截面，将因子值映射为多头、满仓的股票权重，在下一交易日建仓，并持有至下一个执行日。每个因子独立输出收益、波动率、最大回撤、Sharpe、单边换手率、净值曲线、逐期权重和诊断信息。
+系统每周在当时有效的指数成分股内计算一个因子截面，将因子值映射为多头、满仓的股票权重，在下一交易日建仓，并持有至下一个执行日。每个因子独立输出收益、波动率、最大回撤、Sharpe、单边换手率、Rank IC/ICIR、净值曲线、逐期权重和诊断信息，同时输出因子间截面相关性。
 
 当前模块用于“单因子初筛”，不包含行业中性、个股偏离、跟踪误差约束、Black-Litterman或最终组合优化。这些应在后续组合层完成，不能悄悄加入本模块后改变因子评价口径。
 
@@ -70,26 +70,51 @@
   "softmax_temperature": 1.0,
   "rank_tilt_strength": 1.0,
   "minimum_stocks": 10,
+  "ic_minimum_stocks": 10,
+  "correlation_minimum_stocks": 10,
+  "periods_per_year": 52,
   "transaction_cost_bps": 20
 }
 ```
 
 一次运行只采用一种映射。横向比较不同映射时，除映射及其专属参数外，其余配置、股票池和样本期必须保持一致。
 
-## 7. 输出契约
+## 7. Rank IC与ICIR口径
+
+每个信号日，在当时有效成分股中，将完成去极值和方向统一后的因子分数，与“下一执行日到再下一执行日”的个股收益做Spearman秩相关。该相关系数为当期Rank IC。只有共同有效股票数不低于`ic_minimum_stocks`且两个截面均有变化时才计算。
+
+- `rank_ic_mean`：各期Rank IC算术平均；
+- `rank_ic_std`：各期Rank IC样本标准差；
+- `rank_icir`：`rank_ic_mean / rank_ic_std`，不年化；
+- `rank_icir_annualized`：`rank_icir × sqrt(periods_per_year)`；
+- `rank_ic_positive_ratio`：Rank IC大于0的期数比例。
+
+因子方向已统一，因此正Rank IC表示因子排序与未来收益方向一致。IC使用全部有效股票，而不是仓位映射后入选的股票。
+
+## 8. 因子相关性口径
+
+每个信号日，对两个因子在共同有效成分股上的处理后分数计算Spearman相关系数，随后对时间求均值。只有共同样本数不低于`correlation_minimum_stocks`时才计算。由于相关性使用方向统一后的分数，正值表示两个因子的预期收益排序相近。
+
+该指标用于识别重复因子，不代表因果关系。筛选时应结合Rank IC、稳定性、换手率和经济含义，不能简单删除所有高相关因子。
+
+## 9. 输出契约
 
 `FactorEvaluationResult.save()`产生：
 
 - `factor_summary.csv`：累计收益、年化收益、年化波动率、最大回撤、Sharpe和平均单边换手率；
+- `factor_rank_ic.csv`：逐信号日Rank IC、有效样本数和覆盖率；
 - `factor_weekly_returns.csv`：周度净收益；
 - `factor_pnl_curves.csv`：从1开始的累计净值；
 - `factor_turnover.csv`：逐期单边换手率；
 - `factor_weights.csv`：信号日、执行日、退出日、原始因子值、处理后分数和权重；
 - `factor_diagnostics.csv`：覆盖率、股票数、成本、收益、状态和股票池类型。
+- `factor_correlations_weekly.csv`：逐信号日、逐因子对的Spearman相关性；
+- `factor_correlations_summary.csv`：因子对的时间均值、标准差、平均绝对相关性和样本数；
+- `factor_correlation_matrix.csv`：平均Spearman相关系数矩阵，便于热力图和聚类使用。
 
-所有结果表都携带`position_mapping`字段，便于合并多种映射的试验结果时追溯口径。
+组合收益、净值、换手率、权重、诊断和总表携带`position_mapping`字段，便于合并多种映射的试验结果时追溯口径。Rank IC和因子相关性由映射前的因子分数计算，因此不随`position_mapping`变化。
 
-## 8. 扩展规则
+## 10. 扩展规则
 
 新增仓位映射时，只修改`scores_to_weights()`及配置文档，并遵守以下不变量：
 
@@ -100,7 +125,7 @@
 5. 增加单元测试和小型端到端测试；
 6. 不在映射函数内读取行情、成分股或未来数据。
 
-## 9. 验证命令
+## 11. 验证命令
 
 ```bash
 python -m compileall Code/a500 Code/run_factor_evaluation.py Code/tests
