@@ -25,21 +25,29 @@ MARKET_ALIASES = {
 @dataclass
 class FactorEvaluationResult:
     summary: pd.DataFrame
+    rank_ic: pd.DataFrame
     weekly_returns: pd.DataFrame
     pnl_curves: pd.DataFrame
     turnover: pd.DataFrame
     weights: pd.DataFrame
     diagnostics: pd.DataFrame
+    factor_correlations: pd.DataFrame
+    factor_correlation_summary: pd.DataFrame
+    factor_correlation_matrix: pd.DataFrame
 
     def save(self, output_dir: str | Path) -> None:
         out = Path(output_dir)
         out.mkdir(parents=True, exist_ok=True)
         self.summary.to_csv(out / "factor_summary.csv", index=False)
+        self.rank_ic.to_csv(out / "factor_rank_ic.csv", index=False)
         self.weekly_returns.to_csv(out / "factor_weekly_returns.csv", index=False)
         self.pnl_curves.to_csv(out / "factor_pnl_curves.csv", index=False)
         self.turnover.to_csv(out / "factor_turnover.csv", index=False)
         self.weights.to_csv(out / "factor_weights.csv", index=False)
         self.diagnostics.to_csv(out / "factor_diagnostics.csv", index=False)
+        self.factor_correlations.to_csv(out / "factor_correlations_weekly.csv", index=False)
+        self.factor_correlation_summary.to_csv(out / "factor_correlations_summary.csv", index=False)
+        self.factor_correlation_matrix.to_csv(out / "factor_correlation_matrix.csv")
 
 
 def standardize_market_data(market: pd.DataFrame) -> pd.DataFrame:
@@ -186,6 +194,87 @@ def factor_performance_metrics(weekly_returns: pd.Series, turnover: pd.Series, r
     }
 
 
+def rank_ic_metrics(rank_ic: pd.Series, periods_per_year: int = 52) -> dict:
+    values = pd.to_numeric(rank_ic, errors="coerce").dropna()
+    if values.empty:
+        return {
+            "rank_ic_periods": 0, "rank_ic_mean": np.nan,
+            "rank_ic_std": np.nan, "rank_icir": np.nan,
+            "rank_icir_annualized": np.nan, "rank_ic_positive_ratio": np.nan,
+        }
+    mean = float(values.mean())
+    std = float(values.std(ddof=1)) if len(values) > 1 else np.nan
+    icir = mean / std if np.isfinite(std) and std > 0 else np.nan
+    return {
+        "rank_ic_periods": len(values),
+        "rank_ic_mean": mean,
+        "rank_ic_std": std,
+        "rank_icir": icir,
+        "rank_icir_annualized": icir * np.sqrt(periods_per_year) if np.isfinite(icir) else np.nan,
+        "rank_ic_positive_ratio": float((values > 0).mean()),
+    }
+
+
+def spearman_correlation(left: pd.Series, right: pd.Series) -> float:
+    paired = pd.concat([left.rename("left"), right.rename("right")], axis=1).dropna()
+    if len(paired) < 2 or paired["left"].nunique() < 2 or paired["right"].nunique() < 2:
+        return np.nan
+    left_rank = paired["left"].rank(method="average")
+    right_rank = paired["right"].rank(method="average")
+    return float(left_rank.corr(right_rank, method="pearson"))
+
+
+def summarize_factor_correlations(
+    score_snapshots: dict[pd.Timestamp, dict[str, pd.Series]],
+    minimum_stocks: int,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    weekly_rows: list[dict] = []
+    for signal_date, factors in sorted(score_snapshots.items()):
+        factor_ids = sorted(factors)
+        for i, factor_a in enumerate(factor_ids):
+            for factor_b in factor_ids[i + 1:]:
+                paired = pd.concat(
+                    [factors[factor_a].rename("factor_a"), factors[factor_b].rename("factor_b")],
+                    axis=1,
+                ).dropna()
+                if len(paired) < minimum_stocks:
+                    continue
+                correlation = spearman_correlation(paired["factor_a"], paired["factor_b"])
+                if not np.isfinite(correlation):
+                    continue
+                weekly_rows.append({
+                    "signal_date": signal_date, "factor_a": factor_a, "factor_b": factor_b,
+                    "spearman_correlation": float(correlation), "observations": len(paired),
+                })
+
+    columns = ["signal_date", "factor_a", "factor_b", "spearman_correlation", "observations"]
+    weekly = pd.DataFrame(weekly_rows, columns=columns)
+    if weekly.empty:
+        summary = pd.DataFrame(columns=[
+            "factor_a", "factor_b", "periods", "mean_spearman_correlation",
+            "std_spearman_correlation", "mean_absolute_correlation", "average_observations",
+        ])
+        return weekly, summary, pd.DataFrame()
+
+    summary = (
+        weekly.groupby(["factor_a", "factor_b"], as_index=False)
+        .agg(
+            periods=("spearman_correlation", "count"),
+            mean_spearman_correlation=("spearman_correlation", "mean"),
+            std_spearman_correlation=("spearman_correlation", "std"),
+            mean_absolute_correlation=("spearman_correlation", lambda values: values.abs().mean()),
+            average_observations=("observations", "mean"),
+        )
+    )
+    factor_ids = sorted(set(summary["factor_a"]).union(summary["factor_b"]))
+    matrix = pd.DataFrame(np.eye(len(factor_ids)), index=factor_ids, columns=factor_ids)
+    for row in summary.itertuples(index=False):
+        matrix.loc[row.factor_a, row.factor_b] = row.mean_spearman_correlation
+        matrix.loc[row.factor_b, row.factor_a] = row.mean_spearman_correlation
+    matrix.index.name = "factor_id"
+    return weekly, summary, matrix
+
+
 def _validate_factor_output(values: pd.DataFrame, panel: MarketPanel, definition: FactorDefinition) -> pd.DataFrame:
     if not isinstance(values, pd.DataFrame):
         raise TypeError(f"{definition.factor_id} 必须返回日期×股票的 DataFrame")
@@ -204,6 +293,15 @@ def evaluate_factors(
 ) -> FactorEvaluationResult:
     market = standardize_market_data(market)
     position_mapping = config.get("position_mapping", "top_quantile_equal_weight")
+    ic_minimum = int(config.get("ic_minimum_stocks", config.get("minimum_stocks", 10)))
+    correlation_minimum = int(config.get("correlation_minimum_stocks", config.get("minimum_stocks", 10)))
+    periods_per_year = int(config.get("periods_per_year", 52))
+    if ic_minimum < 2:
+        raise ValueError("ic_minimum_stocks 必须大于等于 2")
+    if correlation_minimum < 2:
+        raise ValueError("correlation_minimum_stocks 必须大于等于 2")
+    if periods_per_year <= 0:
+        raise ValueError("periods_per_year 必须大于 0")
     if config.get("drop_weekends", True):
         market = market[market["date"].dt.dayofweek < 5].copy()
     panel = build_market_panel(market, config.get("price_field", "close"))
@@ -225,6 +323,8 @@ def evaluate_factors(
     turnover_rows: list[dict] = []
     weight_rows: list[dict] = []
     diagnostic_rows: list[dict] = []
+    rank_ic_rows: list[dict] = []
+    score_snapshots: dict[pd.Timestamp, dict[str, pd.Series]] = {}
 
     for factor_id in factor_ids:
         definition = registry.get(factor_id)
@@ -264,6 +364,17 @@ def evaluate_factors(
             valid = entry_prices.gt(0) & exit_prices.gt(0)
             scores = scores[valid]
             coverage = float(scores.notna().sum() / len(universe)) if len(universe) else 0.0
+            forward_returns = exit_prices.reindex(scores.index) / entry_prices.reindex(scores.index) - 1
+            rank_ic = np.nan
+            if len(scores) >= ic_minimum and scores.nunique() >= 2 and forward_returns.nunique() >= 2:
+                rank_ic = spearman_correlation(scores, forward_returns)
+            rank_ic_rows.append({
+                "factor_id": factor_id, "signal_date": signal_date,
+                "execution_date": execution_date, "exit_date": exit_date,
+                "rank_ic": float(rank_ic) if np.isfinite(rank_ic) else np.nan,
+                "observations": len(scores), "coverage": coverage,
+            })
+            score_snapshots.setdefault(signal_date, {})[factor_id] = scores
             weights = scores_to_weights(scores, config)
             if weights.empty:
                 diagnostic_rows.append({
@@ -305,11 +416,18 @@ def evaluate_factors(
         returns = pd.Series(factor_returns, dtype=float).sort_index()
         turnovers = pd.Series(factor_turnover, dtype=float).sort_index()
         metrics = factor_performance_metrics(returns, turnovers, float(config.get("risk_free_annual", 0.0)))
+        factor_rank_ic = pd.Series({
+            row["signal_date"]: row["rank_ic"]
+            for row in rank_ic_rows if row["factor_id"] == factor_id
+        }, dtype=float)
+        ic_metrics = rank_ic_metrics(
+            factor_rank_ic, periods_per_year,
+        )
         summary_rows.append({
             "factor_id": factor_id, "library": definition.library,
             "category": definition.category, "direction": definition.direction,
             "position_mapping": position_mapping,
-            **metrics,
+            **metrics, **ic_metrics,
         })
         nav = (1 + returns).cumprod()
         return_rows.extend({
@@ -325,11 +443,18 @@ def evaluate_factors(
             "one_way_turnover": v,
         } for d, v in turnovers.items())
 
+    correlations, correlation_summary, correlation_matrix = summarize_factor_correlations(
+        score_snapshots, correlation_minimum,
+    )
     return FactorEvaluationResult(
         summary=pd.DataFrame(summary_rows),
+        rank_ic=pd.DataFrame(rank_ic_rows),
         weekly_returns=pd.DataFrame(return_rows),
         pnl_curves=pd.DataFrame(pnl_rows),
         turnover=pd.DataFrame(turnover_rows),
         weights=pd.DataFrame(weight_rows),
         diagnostics=pd.DataFrame(diagnostic_rows),
+        factor_correlations=correlations,
+        factor_correlation_summary=correlation_summary,
+        factor_correlation_matrix=correlation_matrix,
     )
