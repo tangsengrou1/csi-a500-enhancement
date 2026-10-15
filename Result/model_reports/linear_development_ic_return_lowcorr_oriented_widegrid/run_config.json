@@ -1,0 +1,76 @@
+{
+  "seed": 20261015,
+  "first_train_year": 2020,
+  "first_test_year": 2024,
+  "last_test_year": 2026,
+  "winsorize_lower": 0.01,
+  "winsorize_upper": 0.99,
+  "minimum_train_coverage": 0.8,
+  "minimum_valid_week_share": 0.9,
+  "minimum_train_weeks": 100,
+  "minimum_stocks_per_week": 20,
+  "minimum_ic_weeks": 52,
+  "minimum_abs_rank_ic": 0.01,
+  "maximum_abs_pairwise_correlation": 0.7,
+  "maximum_selected_factors": 50,
+  "correlation_sample_rows": 100000,
+  "factor_direction_metric": "net_annual_return",
+  "single_factor_return_use_absolute": false,
+  "single_factor_sharpe_use_absolute": false,
+  "ranking_weights": {
+    "abs_rank_ic": 0.55,
+    "abs_rank_icir": 0.0,
+    "ic_direction_stability": 0.0,
+    "single_factor_sharpe": 0.0,
+    "single_factor_return": 0.45
+  },
+  "models": [
+    "ridge",
+    "elastic_net",
+    "lasso",
+    "ols"
+  ],
+  "ridge_alphas": [
+    0.0001,
+    0.001,
+    0.01,
+    0.1,
+    1.0,
+    10.0,
+    100.0,
+    1000.0,
+    10000.0
+  ],
+  "elastic_net_alphas": [
+    1e-06,
+    1e-05,
+    0.0001,
+    0.001,
+    0.01,
+    0.1,
+    1.0
+  ],
+  "elastic_net_l1_ratios": [
+    0.05,
+    0.1,
+    0.25,
+    0.5,
+    0.75,
+    0.9,
+    0.95
+  ],
+  "lasso_alphas": [
+    1e-06,
+    1e-05,
+    0.0001,
+    0.001,
+    0.01,
+    0.1,
+    1.0
+  ],
+  "max_iter": 20000,
+  "tolerance": 1e-05,
+  "label_mode": "raw",
+  "cost_bps_one_way": 20,
+  "portfolio_tail_fraction": 0.2
+}

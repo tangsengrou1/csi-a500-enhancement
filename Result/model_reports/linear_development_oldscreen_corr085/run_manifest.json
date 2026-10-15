@@ -1,0 +1,15 @@
+{
+  "run_time_utc": "2026-10-15T14:05:43.580012+00:00",
+  "data_mode": "development",
+  "market_path": "D:\\Jupyter_Workspace\\pkugrade1\\csi-a500-enhancement\\Data\\raw\\processed_data.parquet",
+  "factor_store_path": "D:\\Jupyter_Workspace\\pkugrade1\\csi-a500-enhancement\\Data\\factor_store",
+  "factor_count": 344,
+  "factor_list_sha256": "84b439c9bd62c9a11f4621d384e951990cf6d93dc4c674ae04fd5e1cb5f1d3c4",
+  "code_commit": "82e67beeb98b3e36106b422821722e75d28e39db",
+  "source_sha256": {
+    "D:\\Jupyter_Workspace\\pkugrade1\\csi-a500-enhancement\\Code\\run_linear_model.py": "fbac70726d7ef13f4f5584952b0b289316f9c67c955bd08a35d24832057f0e5f",
+    "D:\\Jupyter_Workspace\\pkugrade1\\csi-a500-enhancement\\Code\\a500\\linear_model.py": "dfa70fb905a0f54f84cf143bfa15ace8a865b1c7e890f1c8690b252d9dc6241b",
+    "Code\\config\\linear_model_oldscreen_corr085.json": "8a6801408d0873a6258a15391942d941fcd8052dee8a6e22c1d9d6a30bf881e9"
+  },
+  "constituents_path": null
+}
