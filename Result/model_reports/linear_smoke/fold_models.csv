@@ -1,0 +1,5 @@
+fold_id,model_name,model_id,validation_rank_ic,best_parameters,n_features,train_rows,validation_rows,test_predictions,train_end_date
+2024,ridge,ridge_smoke_69629eea,-0.030690819752548854,"{""alpha"": 100.0}",7,71958,24393,25500,2023-01-03
+2024,elastic_net,elastic_net_smoke_69629eea,-0.020954214254814064,"{""alpha"": 0.001, ""l1_ratio"": 0.5}",7,71958,24393,25500,2023-01-03
+2024,lasso,lasso_smoke_69629eea,-0.022400919515171938,"{""alpha"": 0.001}",7,71958,24393,25500,2023-01-03
+2024,ols,ols_smoke_69629eea,-0.030710306845600218,{},7,71958,24393,25500,2023-01-03
