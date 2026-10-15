@@ -12,9 +12,13 @@ import hashlib
 import json
 import math
 
-import lightgbm as lgb
 import numpy as np
 import pandas as pd
+
+try:
+    import lightgbm as lgb
+except ImportError:  # Linear models reuse the shared panel/evaluation code without LightGBM.
+    lgb = None
 
 
 @dataclass
@@ -213,6 +217,8 @@ def ranking_relevance(labels: np.ndarray, dates: np.ndarray) -> tuple[np.ndarray
 def train_candidate(X_train: np.ndarray, y_train: np.ndarray, date_train: np.ndarray,
                     X_val: np.ndarray, y_val: np.ndarray, date_val: np.ndarray,
                     names: list[str], objective: str, candidate: dict, config: dict) -> lgb.Booster:
+    if lgb is None:
+        raise ImportError('运行树模型需要安装 lightgbm；线性模型不需要该依赖')
     params = dict(candidate)
     params.update(verbosity=-1, seed=config['seed'], feature_fraction_seed=config['seed'],
                   bagging_seed=config['seed'], num_threads=config['num_threads'],

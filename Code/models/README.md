@@ -1,6 +1,6 @@
 # 收益预测模型
 
-统一封装线性回归、正则化模型、LightGBM 与 Black–Litterman 等方法。训练、验证、测试按时间切分；输入为因子矩阵，输出为可追溯的预期收益或相对收益观点。二进制模型写入根目录 `models/`，不上传。
+统一封装线性回归、正则化模型、LightGBM 与 Black–Litterman 等方法。训练、验证、测试按时间切分；输入为因子矩阵，输出为可追溯的预期收益或相对收益观点。模型文件写入根目录 `models/`；当前选用的三个 LightGBM 年度模型已上传，其余实验模型不上传。
 
 ## 训练集因子质量报告
 
@@ -45,3 +45,26 @@ python Code/run_tree_model.py --config Code/config/tree_model_tuned.json --devel
 `python Code/audit_tree_labels.py` 检查未复权周收益的极端值，并在 `Data/raw/prices.csv` 有复权价的 2024 年 9 月以后比较同一执行区间的收益。结果写入 `Result/model_reports/tree_label_audit/`。
 
 `Code/config/tree_model_relative.json` 使用每周个股收益减去当周股票池平均收益作为 Huber 训练标签；`Code/config/tree_model_clipped_relative.json` 先对每周收益做 1%/99% 去极值再减均值。验证和回测仍用未经转换的原始收益，便于与原模型同口径比较；训练标签的转换只依赖该周已完成的收益，不进入信号日特征。两份配置仅用于探索性 Huber 对照，完整的回归与排序两组实验仍见基线配置。
+
+## 线性模型组
+
+`Code/run_linear_model.py` 使用与树模型相同的周频面板、时间切分、标签和统一评价函数，
+比较 Ridge、Elastic Net、Lasso 与普通多元线性回归。四个模型使用标准 MSE；Ridge 是基准，
+Elastic Net 是主模型，Lasso 和 OLS 是对照。
+
+每个滚动折只使用训练期筛选因子：先检查覆盖率、有效周数和绝对 Rank IC 下限，再综合
+训练期 Rank IC、ICIR、方向稳定性以及固定的 2020–2022 单因子成本后结果排名。候选按综合
+分数依次进入，并剔除与已入选因子绝对相关系数超过 `maximum_abs_pairwise_correlation` 的
+变量。所有阈值和四个模型的参数候选位于 `Code/config/linear_model.json`。
+
+开发模式和正式模式分别运行：
+
+```bash
+python Code/run_linear_model.py --development-universe --smoke
+python Code/run_linear_model.py --development-universe
+python Code/run_linear_model.py --constituents Data/raw/constituents.csv
+```
+
+输出目录包含统一格式的 `oos_predictions.parquet`、每折筛选记录、验证参数、因子系数、
+系数跨折稳定性、逐周/逐年评价和 Markdown 报告。没有历史成分股时，开发模式结果不能称为
+正式中证 A500 样本外结果。
