@@ -1,0 +1,7 @@
+fold_id,objective,model_id,selected_candidate,validation_rank_ic,best_iteration,n_features,train_rows,validation_rows,test_predictions,train_end_date
+2024,huber,lightgbm_huber_quality_screen_development_ac396393,3,0.05989170723722764,40,331,71958,24393,25500,2023-01-03
+2024,lambdarank,lightgbm_lambdarank_quality_screen_development_ac396393,1,-0.028683869914584183,40,331,71958,24393,25500,2023-01-03
+2025,huber,lightgbm_huber_quality_screen_development_ac396393,0,0.027349872083069094,80,334,96845,25000,26500,2024-01-02
+2025,lambdarank,lightgbm_lambdarank_quality_screen_development_ac396393,0,-0.0247298050647879,40,334,96845,25000,26500,2024-01-02
+2026,huber,lightgbm_huber_quality_screen_development_ac396393,0,0.026714791629494774,5,335,122345,26000,18500,2024-12-30
+2026,lambdarank,lightgbm_lambdarank_quality_screen_development_ac396393,3,0.03993009523945308,5,335,122345,26000,18500,2024-12-30

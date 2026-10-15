@@ -56,15 +56,15 @@ def main() -> None:
     manifest = {
         'run_time_utc': datetime.now(timezone.utc).isoformat(),
         'data_mode': label,
-        'market_path': str(args.market.resolve()),
+        'market_path': str(args.market),
         'market_size_bytes': args.market.stat().st_size,
-        'factor_store_path': str(args.factor_store.resolve()),
+        'factor_store_path': str(args.factor_store),
         'factor_count': len(panel.feature_names),
         'factor_list_sha256': hashlib.sha256('\n'.join(panel.feature_names).encode()).hexdigest(),
         'code_commit': commit.stdout.strip() if commit.returncode == 0 else None,
         'source_sha256': source_hashes,
         'random_seed': config['seed'],
-        'constituents_path': str(args.constituents.resolve()) if args.constituents else None,
+        'constituents_path': str(args.constituents) if args.constituents else None,
     }
     (output / 'run_manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding='utf-8')
     print(f'运行完成：{output.resolve()}')

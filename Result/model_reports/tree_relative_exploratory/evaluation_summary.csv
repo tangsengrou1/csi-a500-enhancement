@@ -1,0 +1,2 @@
+model_id,weeks,rank_ic_mean,rank_icir,rank_icir_annualized,rank_ic_positive_share,net_cumulative_return,net_annual_return,net_annual_vol,net_sharpe,net_max_drawdown,turnover_mean,missing_weeks
+lightgbm_huber_quality_screen_development_141da19a,141,0.024842368042815144,0.1433149046379482,1.033458474420708,0.5460992907801419,0.2397239334657555,0.08247462650776805,0.10805779519424098,0.787322587439174,-0.09889877441903039,0.5327304964539007,0

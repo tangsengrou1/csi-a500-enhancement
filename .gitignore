@@ -34,10 +34,12 @@ Result/model_reports/tree_official/
 Result/model_reports/tree_development_all_usable/
 Result/model_reports/tree_smoke_all_usable/
 Result/model_reports/tree_official_all_usable/
-Result/model_reports/tree_tuned_exploratory/
-Result/model_reports/tree_label_audit/
-Result/model_reports/tree_relative_exploratory/
-Result/model_reports/tree_clipped_relative_exploratory/
+Result/model_reports/tree_tuned_exploratory/oos_predictions.parquet
+Result/model_reports/tree_relative_exploratory/oos_predictions.parquet
+Result/model_reports/tree_clipped_relative_exploratory/oos_predictions.parquet
+Result/model_reports/tree_label_audit/*
+!Result/model_reports/tree_label_audit/label_experiment_report.md
+!Result/model_reports/tree_label_audit/summary.csv
 Result/factor_reports/train_2020_2022/*
 !Result/factor_reports/train_2020_2022/README.md
 !Result/factor_reports/train_2020_2022/factor_quality_report.html

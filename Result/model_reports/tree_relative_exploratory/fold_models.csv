@@ -1,0 +1,4 @@
+fold_id,objective,model_id,selected_candidate,validation_rank_ic,best_iteration,n_features,train_rows,validation_rows,test_predictions,train_end_date
+2024,huber,lightgbm_huber_quality_screen_development_141da19a,2,0.00952704314761281,120,331,71958,24393,25500,2023-01-03
+2025,huber,lightgbm_huber_quality_screen_development_141da19a,0,0.014671980191074732,40,334,96845,25000,26500,2024-01-02
+2026,huber,lightgbm_huber_quality_screen_development_141da19a,1,0.038062005092512806,10,335,122345,26000,18500,2024-12-30

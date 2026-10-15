@@ -1,0 +1,17 @@
+{
+  "run_time_utc": "2026-10-15T08:36:37.991157+00:00",
+  "data_mode": "development",
+  "market_path": "Data/raw/processed_data.parquet",
+  "market_size_bytes": 30990362,
+  "factor_store_path": "Data/factor_store",
+  "factor_count": 344,
+  "factor_list_sha256": "84b439c9bd62c9a11f4621d384e951990cf6d93dc4c674ae04fd5e1cb5f1d3c4",
+  "code_commit": "293b19a9d429644b5e4914e825243e322560f39f",
+  "source_sha256": {
+    "Code/run_tree_model.py": "1068b2ccef2d45e30bfe049e1bada2bebfeca9e8643ae14402b6ae773bb699dd",
+    "Code/a500/tree_model.py": "8f3021857a5dd189f408cfb49fb5886cfaf2026eddb232ed1ed975f232657ed2",
+    "Code/config/tree_model_relative.json": "8277e6be31d16c2aa38a20392d0615e422385147f064d22b375e688c8a429223"
+  },
+  "random_seed": 20261015,
+  "constituents_path": null
+}
