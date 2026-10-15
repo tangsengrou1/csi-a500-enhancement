@@ -13,7 +13,7 @@
 | 用途 | 本地路径 | 说明 |
 |---|---|---|
 | 读取已有历史预测 | `Result/model_reports/tree_clipped_relative_exploratory/oos_predictions.parquet` | 本地保留，含 2024–2026 年逐股票预测；使用 `signal_date`、`execution_date`、`wind_code`、`prediction_rank`、`fold_id`。后续组合使用逐周 0–1 的 `prediction_rank`；`prediction` 是模型原始分数，不应直接解释为绝对预期收益。 |
-| 加载已训练模型 | `models/tree/clipped_relative_exploratory/` | 本地保留，按测试年分别有 `..._2024.txt`、`..._2025.txt`、`..._2026.txt`。读取对应年份模型，并使用下面 `fold_models.csv` 中的 `best_iteration`。 |
+| 加载已训练模型 | [`models/tree/clipped_relative_exploratory/`](../../models/tree/clipped_relative_exploratory/) | 已上传 GitHub，按测试年分别有 `..._2024.txt`、`..._2025.txt`、`..._2026.txt`。读取对应年份模型，并使用下面 `fold_models.csv` 中的 `best_iteration`。 |
 | 查看模型与入选因子 | [`tree_clipped_relative_exploratory/`](tree_clipped_relative_exploratory/) | `fold_models.csv` 给出每折所选轮数和候选；`feature_screen.csv` 给出每折入选因子；`model_report.md` 与评价 CSV 可在 GitHub 直接浏览。 |
 | 重新生成 | [`Code/run_tree_model.py`](../../Code/run_tree_model.py) 与上述配置 | 需要本地原始行情和 `Data/factor_store/`。 |
 
@@ -25,7 +25,7 @@
 | 2025 | `lightgbm_huber_quality_screen_development_6050f4d3_2025.txt` | 120 |
 | 2026 | `lightgbm_huber_quality_screen_development_6050f4d3_2026.txt` | 20 |
 
-`models/`、股票级预测 parquet、原始行情和因子 parquet 均被 Git 忽略，因此 **GitHub 上的报告目录不能直接加载模型做推理**。本地模型和预测可直接调用；换一台机器时，先准备本地数据，再在项目根目录运行：
+上述三个已选模型文本文件已上传 GitHub；其他实验模型、股票级预测 parquet、原始行情和因子 parquet 仍保留在本地。换一台机器可从仓库加载上述模型，但必须按同一配置准备因子矩阵，按对应折的 `feature_screen.csv` 取相同因子，并按 `fold_models.csv` 中的 `best_iteration` 截断预测；仅有模型文件不能重建历史预测。若需从数据完整复现，在项目根目录运行：
 
 ```bash
 python Code/run_tree_model.py \

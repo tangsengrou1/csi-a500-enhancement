@@ -14,7 +14,14 @@ venv/
 .pptx-build/
 .codex-finalizer/
 Code/node_modules/
-/models/
+/models/*
+!/models/tree/
+/models/tree/*
+!/models/tree/clipped_relative_exploratory/
+/models/tree/clipped_relative_exploratory/*
+!/models/tree/clipped_relative_exploratory/lightgbm_huber_quality_screen_development_6050f4d3_2024.txt
+!/models/tree/clipped_relative_exploratory/lightgbm_huber_quality_screen_development_6050f4d3_2025.txt
+!/models/tree/clipped_relative_exploratory/lightgbm_huber_quality_screen_development_6050f4d3_2026.txt
 /cache/
 
 Data/raw/**
