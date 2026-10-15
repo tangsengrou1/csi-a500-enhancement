@@ -28,6 +28,12 @@ Result/demo/**
 !Result/demo/README.md
 Result/official/**
 !Result/official/README.md
+Result/factor_reports/train_2020_2022/*
+!Result/factor_reports/train_2020_2022/README.md
+!Result/factor_reports/train_2020_2022/factor_quality_report.html
+!Result/factor_reports/train_2020_2022/factor_summary.csv
+!Result/factor_reports/train_2020_2022/factor_issues.csv
+!Result/factor_reports/train_2020_2022/factor_quality_report_2020_2022.zip
 
 ~$*
 *.tmp
