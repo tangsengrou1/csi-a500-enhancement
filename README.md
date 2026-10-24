@@ -1,95 +1,99 @@
-# csi-a500-enhancement
+# 中证 A500 多因子选股与指数增强研究
 
-中证 A500 周频指数增强课程项目。研究主线是“多因子选股 → 因子筛选与聚合 → Black–Litterman 观点融合 → 带跟踪误差、行业、个股和换手约束的组合优化 → 含交易成本回测”。正式数据由 Wind 终端手工导出，代码不依赖 WindPy。
+本项目研究一个问题：**能否从股票因子中提取稳定的周度选股信号，并在控制风险和交易成本后形成指数增强组合？**
 
-> 数据边界：本仓库只保存代码、配置、文档模板和合成测试逻辑。Wind 原始数据、清洗数据、股票级因子值、模型文件和正式/演示回测结果均由 `.gitignore` 排除。
+研究从量价因子出发，比较线性模型与 LightGBM 的预测能力，再讨论预测融合、Black–Litterman（BL）和组合优化。项目源于投资组合管理课程，目前同时保留了研究实验与基础工程管线。
 
-## 研究流程
+## 从哪里开始读
 
-1. 按 `Data/Wind导出清单.md` 导出历史成分、权重、行情、行业、估值、财务和无风险利率。
-2. 数据审计与清洗，严格按公告日处理财务数据，避免未来信息。
-3. 从开源因子公式和自研因子构建候选库，统一输入输出、频率、方向和缺失值规则。
-4. 用滚动 IC/ICIR、覆盖率、相关性、分组收益和换手率筛选因子。
-5. 比较线性模型、LightGBM 等聚合方法；所有调参与评估保持时间顺序。
-6. 将预测收益直接或经 Black–Litterman 融合后输入组合优化器。
-7. 周频回测并检查多头、跟踪误差、行业、个股和换手率约束。
-8. 完成基准、等权、多因子、完整策略和稳健性对照，并输出报告与汇报材料。
+| 你想了解什么 | 阅读入口 |
+| --- | --- |
+| 整个项目为什么这样设计，各阶段怎样衔接 | [研究逻辑与方法](docs/RESEARCH_WORKFLOW.md) |
+| 没有 Wind 数据，怎样运行一个例子 | 下方“快速运行” |
+| 有数据后按什么顺序执行 | [复现指南](docs/REPRODUCING.md) |
+| 实验目录太多，先看哪一个 | [结果导航与评价口径](docs/RESULTS.md) |
+| 每个文件和模块负责什么 | [代码地图](Code/README.md) |
+| 数据授权、代码发布和协作 | [发布边界](docs/OPEN_SOURCE.md) · [贡献指南](CONTRIBUTING.md) |
 
-## 目录说明
+## 整体流程
 
-| 目录 | 用途 | 数据规则 |
-|---|---|---|
-| `.github/` | PR/Issue 模板及只使用合成数据的 CI | 可上传 |
-| `Code/a500/` | 当前可运行的核心 Python 包 | 可上传 |
-| `Code/config/` | 示例配置与分环境配置说明 | 只上传示例 |
-| `Code/data_pipeline/` | 数据读取、校验、清洗和 PIT 对齐 | 可上传代码 |
-| `Code/factor_library/` | 因子公式实现及来源/许可证记录 | 可上传代码 |
-| `Code/factor_pipeline/` | 去极值、标准化、中性化、IC 与筛选 | 可上传代码 |
-| `Code/models/` | 线性模型、LightGBM、BL 等预测接口 | 模型文件不上传 |
-| `Code/portfolio/` | 约束优化、交易规则和可成交性处理 | 可上传代码 |
-| `Code/backtest/` | 调仓、费用、持仓演进和回测编排 | 可上传代码 |
-| `Code/reporting/` | 绩效指标、图表和结果表生成 | 可上传代码 |
-| `Code/tests/` | 单元测试与合成数据集成测试 | 可上传 |
-| `Data/raw/` | Wind 原始导出，禁止修改 | 不上传数据 |
-| `Data/processed/` | 清洗后的研究数据 | 不上传数据 |
-| `Data/factor_store/` | 股票级因子值和缓存 | 不上传数据 |
-| `Data/metadata/` | 字段、查询和 PIT 规则说明 | 可上传 |
-| `Data/sample/` | 固定种子合成数据说明 | 可上传 |
-| `Result/demo/` | 合成数据运行输出 | 不上传输出 |
-| `Result/official/` | Wind 正式回测输出 | 不上传输出 |
-| `Result/*` 其他目录 | 可发布的聚合研究说明与正式图表 | 提交前复核 |
-| `Report/` | Word 模板和 Markdown 报告底稿 | 可上传 |
-| `Presentation/` | PPT 模板和汇报结构 | 可上传 |
+```mermaid
+flowchart TD
+    A[行情与股票池] --> B[因子矩阵与质量评价]
+    B --> C[逐年扩展训练与验证]
+    C --> D[线性模型 Ridge / Elastic Net / Lasso / OLS]
+    C --> E[LightGBM Huber / LambdaRank]
+    D --> F[逐周股票预测与截面排名]
+    E --> F
+    F --> G[模型评价：Rank IC / ICIR / 分组收益 / 换手]
+    F --> H[排名分融合与 BL / 均值方差组合]
+    H --> I[含费用的指数增强产品评价]
+    J[独立的基础工程管线：四类风格因子] --> K[BL 与硬约束优化]
+    K --> L[合成演示 / 七表数据回测]
+```
 
-当前实现集中在 `Code/a500/`，新增目录是统一协作边界。新模块按上述目录开发，成熟后再由 PR 完成接口迁移，避免多人同时修改同一文件。
+最终包已合并到独立的 `Code/product/`，补齐从两组预测到产品回测的流程。原 `run_pipeline.py` 保留基础工程用途，完整产品请使用 [`Code/product/run.py`](Code/product/run.py)，见[产品复现指南](docs/PRODUCT_PIPELINE.md)。
 
-## 环境安装
+## 当前已经有哪些内容
 
-建议 Python 3.10 以上版本：
+| 部分 | 当前实现 | 主要入口 |
+| --- | --- | --- |
+| 单因子评价 | 基础因子注册、周频 IC、组合映射；另有 344 因子的训练期质量报告 | [`run_factor_evaluation.py`](Code/run_factor_evaluation.py)、[`build_factor_quality_report.py`](Code/build_factor_quality_report.py) |
+| 线性因子聚合 | Ridge、Elastic Net、Lasso、OLS；训练期筛因子与去相关、验证期选参数 | [`run_linear_model.py`](Code/run_linear_model.py) |
+| 树模型因子聚合 | Huber、LambdaRank；逐年滚动、训练期质量筛选、标签对照与审计 | [`run_tree_model.py`](Code/run_tree_model.py) |
+| 最终产品管线 | 三套信号 × 六类组合、80/20 产品、费用、持仓校验及图表 | [`product/run.py`](Code/product/run.py) |
+| 基础组合管线 | 价值、质量、动量、低波因子 → BL → 硬约束优化 → 回测 | [`run_pipeline.py`](Code/run_pipeline.py) |
+| 研究成果 | 因子质量报告、模型分年评价、参数、重要性和系数稳定性 | [`Result/`](Result/README.md) |
+| 报告材料 | 仓库中的报告写作底稿；最终包报告 PDF 与本地 LaTeX 演示稿 | [`Report/`](Report/README.md) |
+
+`Code/data_pipeline/`、`Code/portfolio/` 等目录主要是协作说明；核心实现实际集中在 `Code/a500/`，不要把目录名称理解为已完成的模块拆分。
+
+## 快速运行
+
+以下命令均在项目根目录执行，建议 Python 3.10 及以上。合成演示不需要 Wind、因子 parquet 或训练模型。
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-python -m pip install --upgrade pip
 python -m pip install -r Code/requirements-dev.txt
-```
-
-## Wind 数据准备
-
-1. 阅读 `Data/Wind导出清单.md` 和 `Data/data_dictionary.csv`。
-2. 将原始 CSV/XLSX 放入 `Data/raw/`，不要改值、改列或覆盖原文件。
-3. 在 `Data/query_log.csv` 记录字段代码、参数、日期范围、导出日期和操作人。
-4. 保留历史成分和权重，禁止用当前成分回填历史；财务信息最早在公告日后的下一交易日使用。
-
-真实数据放入仓库前先运行 `git check-ignore -v 文件路径`；若未命中忽略规则，不得提交。
-
-## 合成数据测试
-
-`Code/a500/synthetic.py` 使用固定随机种子在内存生成完全合成的数据包，不含真实股票记录：
-
-```bash
-pytest Code/tests -q
+python -m pytest Code/tests -q
 python Code/run_pipeline.py demo --config Code/config.json
 ```
 
-演示输出位于 `Result/demo/`，只验证工程管线和约束，不能进入课程结论。
+演示结果写入 `Result/demo/`，用于验证代码和组合约束。它不代表真实股票回测收益。Windows 激活环境可使用 `.venv\Scripts\activate`。
 
-## 正式回测顺序
+要复现因子或模型实验，还需准备相应的本地行情和因子矩阵，详见[复现指南](docs/REPRODUCING.md)。
+
+最终包产品复现：
 
 ```bash
-python Code/run_pipeline.py audit --config Code/config.json
-python Code/run_pipeline.py backtest --config Code/config.json
-python Code/run_experiments.py
+python -m pip install -r Code/requirements-product.txt
+python Code/product/run.py --check-inputs
+python Code/product/run.py
 ```
 
-正式输出进入 `Result/official/`。优化失败必须报错并保留诊断，不得静默切换到无约束组合。
+需将最终包授权输入放到 `Data/product/` 或指定 `A500_PRODUCT_DATA`，默认输出 `Result/reproduced/`。输入布局和重训开关见[产品流程](docs/PRODUCT_PIPELINE.md)。
 
-## GitHub 协作流程
+## 怎样理解研究结果
 
-1. 从最新 `main` 创建 `feature/任务名称` 分支，不建立按成员命名的长期分支。
-2. 一个 PR 只解决一个明确问题，并填写输入输出、字段、防前视处理和测试结果。
-3. 推送前运行合成数据测试，确认 `git status` 不含真实数据或缓存。
-4. 每个 PR 至少由一名非作者审查；检查通过后合并并删除功能分支。
-5. `main` 只保存已审查且可复现的版本，禁止直接在 `main` 上开发。
+- **训练集因子统计、模型预测评价、最终产品回测是三个层次**，不能把其中某个收益直接当作另一层的收益。
+- 现有开发股票池使用可观察股票集合向历史回看；模型收益标签使用未复权价格。它们与完整历史成分、复权口径的正式 A500 研究存在差异。
+- 树模型标签调优前已查看 2024–2026 年测试结果，后续结果属于探索性复评，尚无新的独立检验；2026 年为部分年度。
+- 仓库里包含实际因子、部分预测、模型和历史研究产物，`.gitignore` 不会清除已跟踪文件或提交历史。源码发布边界和授权问题见[发布说明](docs/OPEN_SOURCE.md)。
 
-详细规则见 `CONTRIBUTING.md`。本课程私有项目暂不附开源许可证。
+为避免混淆，首页不把单个实验数字作为全项目的“最终收益”。请从[结果导航](docs/RESULTS.md)进入对应配置和评价报告。
+
+## 目录概览
+
+```text
+Code/           执行入口、核心 a500 包、配置与测试
+Data/           行情、因子矩阵及字段说明；实际数据受授权约束
+Result/         因子与模型的研究结果、基础管线输出
+models/         按实验、模型和年度保存的已训练模型
+Report/         报告底稿与本地报告材料说明
+Presentation/   汇报结构
+docs/          研究流程、复现、结果导航和发布说明
+scripts/       源码导出工具
+```
+
+当前尚未选定开源许可证。项目对外发布前需确认代码权利、第三方来源及数据授权；详见[发布说明](docs/OPEN_SOURCE.md)。

@@ -1,0 +1,5 @@
+-r requirements.txt
+matplotlib>=3.8
+scipy>=1.11
+cvxpy>=1.5,<2
+osqp>=0.6,<2

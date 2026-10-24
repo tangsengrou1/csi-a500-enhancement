@@ -56,3 +56,21 @@ Result/factor_reports/train_2020_2022/*
 
 ~$*
 *.tmp
+
+# Local product data and regenerated artifacts
+/Data/product/**
+!/Data/product/README.md
+/Result/reproduced/
+/output/
+/outputs/
+/tmp/
+/dist/
+/归档/
+
+# Keep local report revisions separate from reviewed deliverables
+/Report/**
+!/Report/README.md
+!/Report/报告写作底稿.md
+!/Report/天枢中证A500指数增强基金.pdf
+/Presentation/**/*.pptx
+/Presentation/**/*.pdf

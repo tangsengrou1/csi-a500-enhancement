@@ -175,8 +175,8 @@ def test_weekly_factor_evaluation_outputs_and_timing():
 def test_rank_ic_detects_predictive_ordering():
     scores = pd.Series(range(20), index=[f"S{i}" for i in range(20)])
     forward_returns = scores * 0.01
-    assert spearman_correlation(scores, forward_returns) == 1.0
-    assert spearman_correlation(scores, -forward_returns) == -1.0
+    assert np.isclose(spearman_correlation(scores, forward_returns), 1.0, rtol=0, atol=1e-12)
+    assert np.isclose(spearman_correlation(scores, -forward_returns), -1.0, rtol=0, atol=1e-12)
     metrics = rank_ic_metrics(pd.Series([0.1, 0.2, 0.3]), periods_per_year=52)
     assert np.isclose(metrics["rank_ic_mean"], 0.2)
     assert np.isclose(metrics["rank_icir"], 2.0)

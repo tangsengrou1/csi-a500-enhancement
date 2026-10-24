@@ -14,6 +14,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -24,14 +26,24 @@ jobs:
       - name: Install dependencies
         run: python -m pip install -r Code/requirements-dev.txt
       - name: Compile Python sources
-        run: python -m compileall -q Code/a500 Code/tests Code/run_pipeline.py Code/run_experiments.py Code/run_factor_evaluation.py
+        run: python -m compileall -q Code/a500 Code/tests Code/run_pipeline.py Code/run_experiments.py Code/run_factor_evaluation.py Code/product
       - name: Run unit tests
         run: pytest Code/tests -q
       - name: Run synthetic integration pipeline
         run: python Code/run_pipeline.py demo --config Code/config.json
-      - name: Assert no Wind files are tracked
+      - name: Reject changes adding private data or local output
         run: |
-          if git ls-files 'Data/raw/*' 'Data/processed/*' 'Data/factor_store/*' | grep -Ev '/README\.md$'; then
-            echo 'Protected data directory contains tracked files.'
+          # Existing tracked research data predates this policy; this checks the
+          # current change, not authorization or cleanliness of historical files.
+          if git rev-parse --verify HEAD^ >/dev/null 2>&1; then
+            git diff --name-only --diff-filter=AM HEAD^ HEAD -- \
+              'Data/raw/**' 'Data/processed/**' 'Data/factor_store/**' 'Data/product/**' \
+              'output/**' 'outputs/**' 'Result/reproduced/**' > /tmp/private-changes.txt
+            if grep -Ev '(^|/)README\.md$' /tmp/private-changes.txt; then
+              echo 'This change adds or modifies private data or generated local artifacts.'
+              exit 1
+            fi
+          else
+            echo '::error::Cannot inspect the parent commit; refuse to skip the data check.'
             exit 1
           fi

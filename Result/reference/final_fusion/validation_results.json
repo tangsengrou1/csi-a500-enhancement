@@ -1,0 +1,7 @@
+{
+  "weight_constraints": true,
+  "independent_gross_return_check": true,
+  "independent_drift_turnover_check": true,
+  "net_cost_and_fee_check": true,
+  "three_sources_same_window_and_benchmark": true
+}
