@@ -1,15 +1,11 @@
-# Wind 原始数据（仅本地）
+# 原研究数据接口
 
-- `wind_exports/`：从 Wind 终端直接导出的原始 CSV/XLSX（中文列名即可），不得修改，不得提交到 Git。导出操作见 `Data/Wind导出操作步骤.md`。
-- 本目录根下的 `prices.csv` 等 7 张标准表由 `Code/data_pipeline/wind_export_to_bundle.py` 生成（可随时从原始导出重建），同样不上传。字段要求见 `data_dictionary.csv`。
+本目录用于原模型研究行情和基础管线的标准表。最终小组产品使用独立的 `Data/product/raw/`，不要混用两套数据目录。
 
-## 当前进度（2026-10-09）
+- 模型研究行情：`processed_data.parquet`，字段为 `securityID`、`trade_dt`、`close`、`amt`；配套因子在 `Data/factor_store/`。
+- 基础管线：`prices`、`benchmark`、`constituents`、`industry`、`valuation`、`fundamentals`、`risk_free` 七类 CSV/XLSX/XLSM；字段见 [data_dictionary.csv](../data_dictionary.csv)。
+- 导出字段和时间要求见 [Wind 导出清单](../Wind导出清单.md)。
 
-已就绪(仅本地——仓库 CI 强制要求标准表不入 git,组员各自本地生成):
-- `benchmark.csv` 506 行、`risk_free.csv` 6183 行;
-- `prices.csv` 253000 行 = 500 只股票 × 2024-09-02 ~ 2026-10-09(由 中证A500.xlsx 行情底表 + 前复权小表合并生成,2024-09 前数据已剔除);
-- `valuation.csv` 252930 行、500 只股票(股息率已从 % 转小数;解析器曾漏掉每块首只股票,已修复后重生成)。
+历史成分、公告日期、复权方式和证券编码需独立核验。目录中存在某个文件不等于完整历史研究数据已经就绪。当前 Python 工程不提供完整的 Wind 导出与全部 344 因子计算器。
 
-未就绪:
-- `fundamentals.csv`: 尚未生成。Wind 导出中未找到"公告日期"(ann_dt)指标,仅有"报告期";转换脚本已支持用报告期按法定披露截止日近似公告日,确认后即可转换;
-- `constituents.csv`、`industry.csv`: 尚未导出,未处理。
+数据公开授权与代码许可分别处理；`.gitignore` 不会移除已跟踪文件或 Git 历史。
